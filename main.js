@@ -23,6 +23,16 @@ document.addEventListener("DOMContentLoaded", (event) => {
   // Append the line to the SVG
   svg.appendChild(line);
 
+  // Create a circle element for the light
+  var light = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+
+  // Set the circle's attributes
+  light.setAttribute("r", "5"); // radius
+  light.setAttribute("fill", "#ff0"); // color
+
+  // Append the light to the SVG
+  svg.appendChild(light);
+
   // Function to update the line's position
   function updateLinePosition() {
     // Get the positions of the elements
@@ -40,6 +50,30 @@ document.addEventListener("DOMContentLoaded", (event) => {
     line.setAttribute("y1", circleCenterY);
     line.setAttribute("x2", cardCenterX);
     line.setAttribute("y2", cardCenterY);
+
+    // Set the initial position of the light
+    light.setAttribute("cx", circleCenterX);
+    light.setAttribute("cy", circleCenterY);
+
+    // Animate the light along the line
+    var length = Math.sqrt(
+      Math.pow(cardCenterX - circleCenterX, 2) +
+        Math.pow(cardCenterY - circleCenterY, 2)
+    );
+    light.animate(
+      [
+        // keyframes
+        { offset: 0, cx: circleCenterX, cy: circleCenterY }, // start from circle
+        { offset: 0.5, cx: cardCenterX, cy: cardCenterY }, // go to card
+        { offset: 1, cx: circleCenterX, cy: circleCenterY }, // go back to circle
+      ],
+      {
+        // timing options
+        duration: length * 10, // duration proportional to the length of the line
+        iterations: Infinity,
+        direction: "alternate", // alternate direction each iteration
+      }
+    );
   }
 
   // Update the line's position initially and whenever the window is resized
