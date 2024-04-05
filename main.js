@@ -1,21 +1,14 @@
 document.addEventListener("DOMContentLoaded", (event) => {
   // Get the elements
-  const circle7 = document.querySelector("#circle7");
-  const circle8 = document.querySelector("#circle8");
   const card = document.querySelector("#card");
 
   // Create an SVG element and append it to the body
   const svg = createSvgElement();
 
-  // Create a line element for circle7
-  const line = createLineElement(svg);
-
-  // Create a path element for circle8
-  const path = createPathElement(svg);
-
-  // Create circle elements for the lights
-  const light7 = createLightElement(svg);
-  const light8 = createLightElement(svg);
+  // Create path and light elements for each circle
+  const circles = Array.from({length: 13}, (_, i) => document.querySelector(`#circle${i+1}`));
+  const paths = circles.map(() => createPathElement(svg));
+  const lights = circles.map(() => createLightElement(svg));
 
   // Update the positions initially and whenever the window is resized
   updatePositions();
@@ -31,14 +24,6 @@ document.addEventListener("DOMContentLoaded", (event) => {
     svg.style.zIndex = "-1";
     document.body.appendChild(svg);
     return svg;
-  }
-
-  function createLineElement(svg) {
-    const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-    line.setAttribute("stroke", "#352B22");
-    line.setAttribute("stroke-width", "2");
-    svg.appendChild(line);
-    return line;
   }
 
   function createPathElement(svg) {
@@ -59,17 +44,14 @@ document.addEventListener("DOMContentLoaded", (event) => {
   }
 
   function updatePositions() {
-    const circle7Center = getCenter(circle7);
-    const circle8Center = getCenter(circle8);
     const cardCenter = getCenter(card);
 
-    updateLine(line, circle7Center, cardCenter);
-    updatePath(path, circle8Center, cardCenter);
-    updateLight(light7, circle7Center);
-    updateLight(light8, circle8Center);
-
-    animateLight(light7, circle7Center, cardCenter);
-    animateLightAlongPath(light8, path);
+    circles.forEach((circle, i) => {
+      const circleCenter = getCenter(circle);
+      updatePath(paths[i], circleCenter, cardCenter);
+      updateLight(lights[i], circleCenter);
+      animateLightAlongPath(lights[i], paths[i]);
+    });
   }
 
   function getCenter(element) {
@@ -78,13 +60,6 @@ document.addEventListener("DOMContentLoaded", (event) => {
       x: rect.left + rect.width / 2,
       y: rect.top + rect.height / 2
     };
-  }
-
-  function updateLine(line, start, end) {
-    line.setAttribute("x1", start.x);
-    line.setAttribute("y1", start.y);
-    line.setAttribute("x2", end.x);
-    line.setAttribute("y2", end.y);
   }
 
   function updatePath(path, start, end) {
@@ -97,36 +72,26 @@ document.addEventListener("DOMContentLoaded", (event) => {
     light.setAttribute("cy", center.y);
   }
 
-  function animateLight(light, start, end) {
-    const length = Math.sqrt(Math.pow(end.x - start.x, 2) + Math.pow(end.y - start.y, 2));
-    light.animate([
-      { offset: 0, cx: start.x, cy: start.y },
-      { offset: 1, cx: end.x, cy: end.y }
-    ], {
-      duration: length * 10,
-      iterations: Infinity,
-      direction: 'alternate'
-    });
-  }
-
   function animateLightAlongPath(light, path) {
     var pathLength = path.getTotalLength();
     var startTime = null;
-
+    var direction = 1;
+  
     function step(timestamp) {
       if (!startTime) startTime = timestamp;
-      var progress = (timestamp - startTime) / (pathLength * 10);
+      var progress = ((timestamp - startTime) / (pathLength * 10)) % 2;
+      if (progress > 1) {
+        direction = -1;
+        progress = 2 - progress;
+      } else {
+        direction = 1;
+      }
       var point = path.getPointAtLength(progress * pathLength);
       light.setAttribute('cx', point.x);
       light.setAttribute('cy', point.y);
-      if (progress < 1) {
-        requestAnimationFrame(step);
-      } else {
-        startTime = null;
-        animateLightAlongPath(light, path); // Loop the animation
-      }
+      requestAnimationFrame(step);
     }
-
+  
     requestAnimationFrame(step);
   }
 });
