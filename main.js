@@ -1,82 +1,132 @@
 document.addEventListener("DOMContentLoaded", (event) => {
-  // Get the .circle7 and .card elements
-  var circle = document.querySelector("#circle7");
-  var card = document.querySelector("#card");
+  // Get the elements
+  const circle7 = document.querySelector("#circle7");
+  const circle8 = document.querySelector("#circle8");
+  const card = document.querySelector("#card");
 
   // Create an SVG element and append it to the body
-  var svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-  svg.style.position = "absolute";
-  svg.style.top = "0";
-  svg.style.left = "0";
-  svg.style.width = "100%";
-  svg.style.height = "100%";
-  svg.style.zIndex = "-1";
-  document.body.appendChild(svg);
+  const svg = createSvgElement();
 
-  // Create a line element
-  var line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+  // Create a line element for circle7
+  const line = createLineElement(svg);
 
-  // Set the line color and width
-  line.setAttribute("stroke", "#352B22");
-  line.setAttribute("stroke-width", "2");
+  // Create a path element for circle8
+  const path = createPathElement(svg);
 
-  // Append the line to the SVG
-  svg.appendChild(line);
+  // Create circle elements for the lights
+  const light7 = createLightElement(svg);
+  const light8 = createLightElement(svg);
 
-  // Create a circle element for the light
-  var light = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+  // Update the positions initially and whenever the window is resized
+  updatePositions();
+  window.addEventListener("resize", updatePositions);
 
-  // Set the circle's attributes
-  light.setAttribute("r", "5"); // radius
-  light.setAttribute("fill", "#ff0"); // color
-
-  // Append the light to the SVG
-  svg.appendChild(light);
-
-  // Function to update the line's position
-  function updateLinePosition() {
-    // Get the positions of the elements
-    var circleRect = circle.getBoundingClientRect();
-    var cardRect = card.getBoundingClientRect();
-
-    // Calculate the centers of the elements
-    var circleCenterX = circleRect.left + circleRect.width / 2;
-    var circleCenterY = circleRect.top + circleRect.height / 2;
-    var cardCenterX = cardRect.left + cardRect.width / 2;
-    var cardCenterY = cardRect.top + cardRect.height / 2;
-
-    // Set the start and end points of the line
-    line.setAttribute("x1", circleCenterX);
-    line.setAttribute("y1", circleCenterY);
-    line.setAttribute("x2", cardCenterX);
-    line.setAttribute("y2", cardCenterY);
-
-    // Set the initial position of the light
-    light.setAttribute("cx", circleCenterX);
-    light.setAttribute("cy", circleCenterY);
-
-    // Animate the light along the line
-    var length = Math.sqrt(
-      Math.pow(cardCenterX - circleCenterX, 2) +
-        Math.pow(cardCenterY - circleCenterY, 2)
-    );
-    light.animate(
-      [
-        // keyframes
-        { offset: 0, cx: circleCenterX, cy: circleCenterY }, // start from circle
-        { offset: 0.5, cx: cardCenterX, cy: cardCenterY }, // go to card
-        { offset: 1, cx: circleCenterX, cy: circleCenterY }, // go back to circle
-      ],
-      {
-        // timing options
-        duration: length * 10, // duration proportional to the length of the line
-        iterations: Infinity,
-        direction: "alternate", // alternate direction each iteration
-      }
-    );
+  function createSvgElement() {
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.style.position = "absolute";
+    svg.style.top = "0";
+    svg.style.left = "0";
+    svg.style.width = "100%";
+    svg.style.height = "100%";
+    svg.style.zIndex = "-1";
+    document.body.appendChild(svg);
+    return svg;
   }
 
-  // Update the line's position initially and whenever the window is resized
-  updateLinePosition();
-  window.addEventListener("resize", updateLinePosition);
+  function createLineElement(svg) {
+    const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+    line.setAttribute("stroke", "#352B22");
+    line.setAttribute("stroke-width", "2");
+    svg.appendChild(line);
+    return line;
+  }
+
+  function createPathElement(svg) {
+    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    path.setAttribute("stroke", "#352B22");
+    path.setAttribute("stroke-width", "2");
+    path.setAttribute("fill", "none");
+    svg.appendChild(path);
+    return path;
+  }
+
+  function createLightElement(svg) {
+    const light = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+    light.setAttribute("r", "5");
+    light.setAttribute("fill", "#ff0");
+    svg.appendChild(light);
+    return light;
+  }
+
+  function updatePositions() {
+    const circle7Center = getCenter(circle7);
+    const circle8Center = getCenter(circle8);
+    const cardCenter = getCenter(card);
+
+    updateLine(line, circle7Center, cardCenter);
+    updatePath(path, circle8Center, cardCenter);
+    updateLight(light7, circle7Center);
+    updateLight(light8, circle8Center);
+
+    animateLight(light7, circle7Center, cardCenter);
+    animateLightAlongPath(light8, path);
+  }
+
+  function getCenter(element) {
+    const rect = element.getBoundingClientRect();
+    return {
+      x: rect.left + rect.width / 2,
+      y: rect.top + rect.height / 2
+    };
+  }
+
+  function updateLine(line, start, end) {
+    line.setAttribute("x1", start.x);
+    line.setAttribute("y1", start.y);
+    line.setAttribute("x2", end.x);
+    line.setAttribute("y2", end.y);
+  }
+
+  function updatePath(path, start, end) {
+    const d = `M ${start.x} ${start.y} Q ${start.x} ${end.y}, ${end.x} ${end.y}`;
+    path.setAttribute("d", d);
+  }
+
+  function updateLight(light, center) {
+    light.setAttribute("cx", center.x);
+    light.setAttribute("cy", center.y);
+  }
+
+  function animateLight(light, start, end) {
+    const length = Math.sqrt(Math.pow(end.x - start.x, 2) + Math.pow(end.y - start.y, 2));
+    light.animate([
+      { offset: 0, cx: start.x, cy: start.y },
+      { offset: 1, cx: end.x, cy: end.y }
+    ], {
+      duration: length * 10,
+      iterations: Infinity,
+      direction: 'alternate'
+    });
+  }
+
+  function animateLightAlongPath(light, path) {
+    var pathLength = path.getTotalLength();
+    var startTime = null;
+
+    function step(timestamp) {
+      if (!startTime) startTime = timestamp;
+      var progress = (timestamp - startTime) / (pathLength * 10);
+      var point = path.getPointAtLength(progress * pathLength);
+      light.setAttribute('cx', point.x);
+      light.setAttribute('cy', point.y);
+      if (progress < 1) {
+        requestAnimationFrame(step);
+      } else {
+        startTime = null;
+        animateLightAlongPath(light, path); // Loop the animation
+      }
+    }
+
+    requestAnimationFrame(step);
+  }
 });
